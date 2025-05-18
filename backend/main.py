@@ -20,6 +20,7 @@ landmark_finder = dlib.shape_predictor(FACE_LANDMARK_PREDICTION_MODEL)
 
 (right_eye_begin, right_eye_end) = imutils.face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
 
+(mouth_begin, mouth_end) = imutils.face_utils.FACIAL_LANDMARKS_68_IDXS["inner_mouth"]
 
 def eye_aspect_ratio(eye):
     p2_minus_p6 = distance.euclidean(eye[1], eye[5])
@@ -28,6 +29,14 @@ def eye_aspect_ratio(eye):
     ear = (p2_minus_p6 + p3_minus_p5) / (2.0 * p1_minus_p4)
     return ear
 
+def mouth_aspect_ratio(mouth):
+    p2_minus_p8 = distance.euclidean(mouth[1], mouth[7])
+    p3_minus_p7 = distance.euclidean(mouth[2], mouth[6])
+    p4_minus_p6 = distance.euclidean(mouth[3], mouth[5])
+    p1_minus_p5 = distance.euclidean(mouth[0], mouth[4])
+
+    mar = ( p2_minus_p8 + p3_minus_p7 + p4_minus_p6 ) / (2.0 * p1_minus_p5)
+    return mar
 
 # for i in face_points:
 #     image = cv2.circle(image, (i[0],i[1]), radius=0, color=(0,0,255), thickness=-1)
@@ -40,7 +49,6 @@ def eye_aspect_ratio(eye):
 async def websocket_endpoint(websocket : WebSocket):
     await websocket.accept()
     print("connection accepted")
-    NUMBER_OF_EXECUTION = 0
     EYE_CLOSED_COUNTER = 0
     while True:
         try:
@@ -57,24 +65,25 @@ async def websocket_endpoint(websocket : WebSocket):
                 face_points = landmark_finder(gray_image,f)
                 face_points = imutils.face_utils.shape_to_np(face_points)
                 
+                mouth = face_points[mouth_begin:mouth_end]
+                mar = mouth_aspect_ratio(mouth)
+
                 left_eye = face_points[left_eye_begin:left_eye_end] 
                 right_eye = face_points[right_eye_begin:right_eye_end]
                 left_ear = eye_aspect_ratio(left_eye)
                 right_ear = eye_aspect_ratio(right_eye)
                 final_ear = left_ear + right_ear / 2.0
-                NUMBER_OF_EXECUTION = NUMBER_OF_EXECUTION + 1
-                print("NUMBEROFEXEC ",NUMBER_OF_EXECUTION)
+                
                 if(final_ear < MIN_EAR):
                     EYE_CLOSED_COUNTER += 1
                     await websocket.send_text("it's fine")
-                    print(EYE_CLOSED_COUNTER)
                 else:
                     await websocket.send_text("it's fine")
                     EYE_CLOSED_COUNTER = 0
 
-                if(EYE_CLOSED_COUNTER >= MAX_FRAME_COUNT):
-                    print("drowsinesss detected")
+                if(EYE_CLOSED_COUNTER >= MAX_FRAME_COUNT or mar>0.5):
                     await websocket.send_text("drowsy")
+
         except Exception as e:
             print("Exception thrown ",e)
             break

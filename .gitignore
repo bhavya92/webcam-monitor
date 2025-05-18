@@ -1,6 +1,7 @@
 backend/__pycache__
 backend/alertness_project
 backend/shape_predictor_68_face_landmarks.dat
+backend/temp.py
 
 # Logs
 frontend/logs

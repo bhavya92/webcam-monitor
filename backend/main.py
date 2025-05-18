@@ -76,13 +76,13 @@ async def websocket_endpoint(websocket : WebSocket):
                 
                 if(final_ear < MIN_EAR):
                     EYE_CLOSED_COUNTER += 1
-                    await websocket.send_text("it's fine")
                 else:
-                    await websocket.send_text("it's fine")
                     EYE_CLOSED_COUNTER = 0
 
                 if(EYE_CLOSED_COUNTER >= MAX_FRAME_COUNT or mar>0.5):
                     await websocket.send_text("drowsy")
+                else:
+                    await websocket.send_text("it's fine")
 
         except Exception as e:
             print("Exception thrown ",e)

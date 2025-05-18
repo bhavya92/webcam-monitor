@@ -6,6 +6,10 @@ export default function App() {
   const intervalRef = useRef<number| null>(null);
   const [start, setStart] = useState(false);
 
+  //These refs are to check if the drowsiness sustains in 2-3 consecutive messages and then update the state
+  const drowsy_count_ref = useRef<number>(0);
+  const awake_count_ref = useRef<number>(0);
+
   const mediaStreamRef = useRef<MediaStream | null>(null);
   
   useEffect(() => {
@@ -18,9 +22,17 @@ export default function App() {
     socketRef.current.onmessage = (message) => {
       console.log(message);
       if(message.data === "drowsy"){
-        setDrowsy(true)
+        drowsy_count_ref.current +=  1;
+        if(drowsy_count_ref.current >= 2){
+          setDrowsy(true);
+          drowsy_count_ref.current = 0;
+        }
       } else {
-        setDrowsy(false)
+        awake_count_ref.current += 1;
+        if(awake_count_ref.current >= 2) {
+          setDrowsy(false)
+          awake_count_ref.current = 0;
+        }
       }
     }
     
